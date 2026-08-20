@@ -21,8 +21,8 @@ dead weight: delete it in the same change that finishes step 6.
 - **Migrations inside the build** (`vercel.json`), so the schema lands before
   the code that needs it — `node-pg-migrate`, plain `.sql` files, conventions
   enforced by `tests/migrationFiles.test.ts`.
-- **A database seam** (`lib/db.ts`) and an **auth seam** (`lib/auth.ts`), the
-  latter deliberately unimplemented — see step 4.
+- **A database seam** (`lib/db.ts`) and an **auth seam** (`lib/auth.ts`) with
+  Neon Auth wired into it, inert until its variables exist — see step 4.
 - **A health endpoint** (`/api/health`) that reports what is configured, which
   is what every setup step below checks itself against.
 - **The workflow rules** (`CLAUDE.md`) and **the skills** (`.claude/skills/`)
@@ -30,8 +30,8 @@ dead weight: delete it in the same change that finishes step 6.
 
 ## What is deliberately missing
 
-- **A real auth implementation.** The seam is here; the provider is not. Auth
-  SDKs move, and a wrong guess builds cleanly and fails at sign-in.
+- **A provisioned auth project.** The wiring is here and the code path is
+  live; what is missing is the Neon project and its two variables (step 4).
 - **Any domain model.** `db/migrations/0001_example.sql` and `examples` exist to
   exercise the migration path. Delete them with your first real migration.
 - **Styling.** No CSS framework is chosen for you. Add one deliberately if the
@@ -85,28 +85,61 @@ Additive only. The migration runs during the build while the *previous*
 deployment is still serving, so old code meets the new schema. Nullable columns
 now; renames and drops in a later change once nothing reads the old shape.
 
-### 4. Wire auth
+### 4. Turn auth on
 
-The house default is **Neon Auth (managed Better Auth)**, and the trap is that
-most of what is written about "Neon Auth" describes the older Stack Auth
-integration — `@stackframe/stack`, `NEXT_PUBLIC_STACK_*` — which is closed to
-new projects. Follow the auth section of `cli-first-provisioning`, then:
+Neon Auth is **already wired** — `lib/neonAuth.ts` implements the provider
+against `@neondatabase/auth`, and `app/api/auth/[...path]/route.ts` proxies its
+endpoints. Nothing happens until its two variables exist, and until then every
+request resolves to anonymous, which is why the skeleton builds and tests
+without a Neon project.
 
-1. Enable it and add your deployed URL as a trusted domain.
-2. **Read the variable names back** from the provider's own CLI (`--output
-   json`) rather than assuming them.
-3. Implement `AuthProvider` in `lib/auth.ts` against whatever the SDK's current
-   README says, and call `setAuthProvider()` once at startup.
-4. Leave `unconfiguredAuth` in place as the default. It fails closed, which is
-   what keeps a half-finished setup from exposing routes.
+The trap to know first: most of what is written about "Neon Auth" describes the
+older **Stack Auth** integration — `@stackframe/stack`, `NEXT_PUBLIC_STACK_*` —
+which is closed to new projects. The current product is managed Better Auth, and
+identity lives in the `neon_auth` schema of your own database.
 
-`tests/auth.test.ts` already covers the contract — anonymous is refused, a
-signed-in caller gets their account, and an anonymous response leaks nothing.
-Those tests should keep passing against the real provider; if they need
-loosening to pass, the implementation is wrong, not the tests.
+```bash
+npx neonctl neon-auth enable --project-id <id> --branch main
+npx neonctl neon-auth status --project-id <id> --output json   # read names back
+npx neonctl neon-auth domain add https://<your-app-url> --project-id <id>
+
+npx vercel env add NEON_AUTH_BASE_URL production preview development
+npx vercel env add NEON_AUTH_COOKIE_SECRET production preview development
+```
+
+`NEON_AUTH_COOKIE_SECRET` is yours to generate — `openssl rand -base64 32`, and
+**at least 32 characters** or the SDK throws. Then activate it once at startup:
+
+```ts
+import { setAuthProvider } from '@/lib/auth';
+import { neonAuthProvider } from '@/lib/neonAuth';
+
+setAuthProvider(neonAuthProvider);
+```
+
+Check `/api/health` reports `authConfigured: true`, and remember that variables
+apply at build time — set them and redeploy.
+
+Two things to keep as they are. `unconfiguredAuth` stays the default because it
+fails closed, so a half-finished setup denies rather than exposes. And the
+session mapping stays in `lib/neonSession.ts`, apart from the SDK: importing
+`@neondatabase/auth` pulls in `next/headers`, which only resolves inside a Next
+runtime, so anything importing it cannot be unit-tested.
+
+`tests/auth.test.ts` and `tests/neonSession.test.ts` cover the contract —
+anonymous is refused, an anonymous response leaks nothing, a signed-in caller
+gets their account, and the account is identified by id rather than by email.
+Those should keep passing against the real provider; if they need loosening, the
+implementation is wrong, not the tests.
+
+The SDK was **pre-1.0 and beta-tagged** when this was written
+(`0.5.0-beta`), which is why it is pinned to an exact version. Before upgrading,
+read the installed package's own `llms.txt` — `npm pack @neondatabase/auth` and
+look inside the tarball — rather than a search result.
 
 A different provider is a fine choice when it suits the app better. Decide it
-deliberately, say why in `SETUP.md`, and set it up by CLI like everything else.
+deliberately, say why in `SETUP.md`, implement `AuthProvider` against it, and set
+it up by CLI like everything else.
 
 ### 5. Prove it end to end
 

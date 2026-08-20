@@ -20,5 +20,9 @@ export async function GET(): Promise<Response> {
     ok: true,
     databaseConfigured: config.databaseUrl !== undefined,
     appUrlConfigured: config.appUrl !== undefined,
+    // Both or nothing: one without the other cannot sign anybody in, and
+    // reporting it as configured would hide a half-finished setup.
+    authConfigured:
+      config.authBaseUrl !== undefined && config.authCookieSecret !== undefined,
   });
 }
