@@ -1,0 +1,38 @@
+{
+  "name": "app-skeleton",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Rename me. Starting point for a new app \u2014 see INIT.md.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "migrate": "tsx db/migrate.ts",
+    "migrate:new": "node-pg-migrate create --migrations-dir db/migrations --migration-file-language sql"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "next": "^16.3.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "dotenv": "^16.4.7",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.1",
+    "node-pg-migrate": "^9.0.0",
+    "pg": "^8.23.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "yaml": "^2.9.0"
+  }
+}
