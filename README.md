@@ -25,9 +25,12 @@ SETUP.md                provisioning, written to be run without a browser
 app/                    Next.js App Router
   api/health/           what is configured, as JSON
   api/me/               the template for an authenticated route
+  api/auth/[...path]/   Neon Auth's endpoints, proxied
 lib/env.ts              every environment variable, in one place
 lib/db.ts               the query handle
-lib/auth.ts             the auth seam — an interface, deliberately unimplemented
+lib/auth.ts             the auth seam — an interface, fails closed by default
+lib/neonSession.ts      Neon Auth's session mapped onto ours (unit-tested)
+lib/neonAuth.ts         the SDK wiring — thin, because it cannot be unit-tested
 db/migrate.ts           `npm run migrate` — node-pg-migrate, configured
 db/migrations/          numbered .sql files, applied once each
 tests/                  behaviour, plus the pipeline's own shape

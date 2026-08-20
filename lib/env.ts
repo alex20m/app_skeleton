@@ -24,6 +24,9 @@ export type AppConfig = {
   databaseUrlUnpooled: string | undefined;
   /** Where the app is actually served, for links in emails and redirects. */
   appUrl: string | undefined;
+  /** Neon Auth's base URL and cookie secret — both required, or auth is off. */
+  authBaseUrl: string | undefined;
+  authCookieSecret: string | undefined;
 };
 
 export function readConfig(env: EnvSource = process.env): AppConfig {
@@ -31,6 +34,8 @@ export function readConfig(env: EnvSource = process.env): AppConfig {
     databaseUrl: nonEmpty(env.DATABASE_URL),
     databaseUrlUnpooled: nonEmpty(env.DATABASE_URL_UNPOOLED),
     appUrl: nonEmpty(env.APP_URL),
+    authBaseUrl: nonEmpty(env.NEON_AUTH_BASE_URL),
+    authCookieSecret: nonEmpty(env.NEON_AUTH_COOKIE_SECRET),
   };
 }
 
