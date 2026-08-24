@@ -48,10 +48,30 @@ needs credentials the sandbox does not have.
    on the root element, so you can toggle it in-page instead of restarting.
 6. **Delete the throwaway route and env file, then check `git status`.** A
    preview route that reaches the default branch is a live URL nobody meant to
-   publish. Do this before staging, not after.
+   publish. Do this before staging, not after. Then clear the framework's build
+   cache: a dev server that generates per-route types leaves one behind
+   *importing the route you just deleted*, so the typecheck fails on a
+   gitignored generated file and the error points at nothing you wrote.
 
 ## Traps
 
+- **The shutter can catch a transition mid-flight, and the half-interpolated
+  frame reads as a *state*.** A control whose colours are a third of the way
+  from filled to outlined photographs as a greyed-out, disabled-looking button,
+  and the obvious next move — hunting the CSS rule that disabled it — finds
+  nothing, because `getComputedStyle` returns the interpolated colour too and
+  agrees with the picture. Two habits kill it: move the pointer off the element
+  before shooting (whatever you clicked to get here is often exactly where the
+  new control lands, so it is hovered), and pause past the longest transition.
+  If a computed colour matches no token in the stylesheet, that is the tell.
+- **A third-party stylesheet can carry a reset that silently disables your own
+  rules.** A component library's CSS import commonly ships a preflight that
+  clears list markers, form styling and heading margins across the whole
+  document, so a rule of yours that assumes browser defaults renders as nothing
+  — and every test still passes, because no unit test applies CSS at all. The
+  give-away is a stylesheet that styles something invisible in the shot (a
+  `::marker` colour where no markers appear). Fix it by restating the property
+  explicitly rather than by fighting the import.
 - **The scratch script cannot resolve the browser driver** when it lives outside
   the project. Import it by absolute path from the project's modules, or run the
   script from the project root.
@@ -74,6 +94,23 @@ needs credentials the sandbox does not have.
   masked shapes come out on white. Check the result really is RGBA.
 - **An `<img src="…svg">` sized by CSS can render clipped** rather than scaled.
   When rasterising a vector, inline the SVG into the page instead of linking it.
+
+- **A page that renders but never hydrates looks like a component bug.** The
+  server markup arrives, so the shot is not blank — but anything the client
+  decides (a control that only exists after mount, a popup behind a click) is
+  simply absent, and the obvious reading is that your component is broken.
+  Before touching the component, listen for failed responses in the driver
+  (`page.on('response', r => r.status() >= 400 && console.log(r.status(),
+  r.url()))`) and for `pageerror` — a blocked request usually shows up there
+  before it shows up in your component's behaviour. One cause is general
+  enough to hit on any stack: **the sandbox's HTTP proxy can swallow a
+  loopback request.** Where the environment sets `HTTP(S)_PROXY`, Chromium
+  picks it up and routes even `localhost`/`127.0.0.1` through it, which can
+  answer `403`. Launch the browser with `args: ['--no-proxy-server']` —
+  setting `NO_PROXY` on the *driver* process does not help, since it is the
+  browser's own proxy resolution that matters. A framework's dev server can
+  independently refuse its own assets over one host and not another; see the
+  Next-specific case below for that shape of the same symptom.
 
 ### Framework traps for the throwaway route
 
