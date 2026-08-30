@@ -8,10 +8,16 @@ description: >-
   done", "merge it when it's green", or babysitting/monitoring a PR. Use it even
   for what sounds like a one-off status check, because *how* you read the status
   is exactly what goes wrong. Defines what "green" actually means, how to wait
-  without burning context, and how to merge and confirm it landed.
+  without burning context, and how to merge and confirm it landed. EXPERIMENTAL
+  build testing `context: fork` + `background: false` — invoke with args
+  `<owner> <repo> <pull_number> <branch>`.
+context: fork
+background: false
+agent: general-purpose
+arguments: [owner, repo, pull_number, branch]
 ---
 
-# Merge on green
+# Merge on green [EXPERIMENT: context: fork, background: false]
 
 Take an open PR from *pushed* to *merged*, without ever merging code that CI has
 not actually vetted.
@@ -19,18 +25,23 @@ not actually vetted.
 Wait for everything to finish, then merge. The whole difficulty is that GitHub
 will happily tell you everything has finished when it has not yet started.
 
-> **Tried and reverted: running this as `context: fork` in the background.**
-> Forking the whole loop into an isolated subagent looks like the obvious fix
-> for the context this skill burns during a long wait — the fork's own polling
-> never touches the calling conversation. In testing it silently failed to
-> come back: the forked subagent started a background sleep, yielded, and was
-> never resumed — no error, no notification, just a PR that sat unmerged with
-> nothing watching it. Whether that's specific to one execution environment or
-> general is unconfirmed; until background-fork resumption is verified
-> end-to-end (a real multi-minute CI wait, observed to actually resume and
-> report back), keep this loop inline in the calling conversation as below. A
-> silent no-op on a step that ends with an irreversible merge is worse than
-> the context cost this would have saved.
+You were given `$owner $repo $pull_number $branch` — use these, you have no
+access to the conversation that invoked you. Everywhere below that says
+`owner`, `repo`, `pullNumber`, or `<branch>`, substitute these values.
+
+**This build exists to answer one question:** does `context: fork` with
+`background: false` actually block the calling turn until this loop finishes,
+including a real multi-minute CI wait, and return a real final result? A
+prior attempt with the default `background: true` started a background sleep,
+yielded, and was silently never resumed — no error, no notification, just an
+unmerged PR with nothing watching it. If this run exhibits the same symptom
+(returns almost immediately with something like "waiting for..." instead of
+an actual `MERGED`/`BLOCKED` outcome after real CI time has passed), that is
+this experiment's answer: revert to the inline design, which is proven.
+
+When you finish, your final message must be exactly one line:
+`MERGED $owner/$repo#$pull_number: <what merged>` or
+`BLOCKED $owner/$repo#$pull_number: <reason>`.
 
 ## The one trap
 
