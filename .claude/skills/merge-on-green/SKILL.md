@@ -8,16 +8,10 @@ description: >-
   done", "merge it when it's green", or babysitting/monitoring a PR. Use it even
   for what sounds like a one-off status check, because *how* you read the status
   is exactly what goes wrong. Defines what "green" actually means, how to wait
-  without burning context, and how to merge and confirm it landed. EXPERIMENTAL
-  build testing `context: fork` + `background: false` — invoke with args
-  `<owner> <repo> <pull_number> <branch>`.
-context: fork
-background: false
-agent: general-purpose
-arguments: [owner, repo, pull_number, branch]
+  without burning context, and how to merge and confirm it landed.
 ---
 
-# Merge on green [EXPERIMENT: context: fork, background: false]
+# Merge on green
 
 Take an open PR from *pushed* to *merged*, without ever merging code that CI has
 not actually vetted.
@@ -25,23 +19,28 @@ not actually vetted.
 Wait for everything to finish, then merge. The whole difficulty is that GitHub
 will happily tell you everything has finished when it has not yet started.
 
-You were given `$owner $repo $pull_number $branch` — use these, you have no
-access to the conversation that invoked you. Everywhere below that says
-`owner`, `repo`, `pullNumber`, or `<branch>`, substitute these values.
-
-**This build exists to answer one question:** does `context: fork` with
-`background: false` actually block the calling turn until this loop finishes,
-including a real multi-minute CI wait, and return a real final result? A
-prior attempt with the default `background: true` started a background sleep,
-yielded, and was silently never resumed — no error, no notification, just an
-unmerged PR with nothing watching it. If this run exhibits the same symptom
-(returns almost immediately with something like "waiting for..." instead of
-an actual `MERGED`/`BLOCKED` outcome after real CI time has passed), that is
-this experiment's answer: revert to the inline design, which is proven.
-
-When you finish, your final message must be exactly one line:
-`MERGED $owner/$repo#$pull_number: <what merged>` or
-`BLOCKED $owner/$repo#$pull_number: <reason>`.
+> **Tested twice and reverted: running this as `context: fork`.** Forking the
+> whole loop into an isolated subagent is the obvious fix for the context this
+> skill burns during a long wait — the fork's own polling never touches the
+> calling conversation. Tested both ways `context: fork` can run: with
+> `background: true` (the default — resume later, out of band) and with
+> `background: false` (block the calling turn until the fork finishes). Both
+> failed identically: the invocation returns almost immediately with an
+> in-progress-sounding message ("waiting for the first poll," "3-minute
+> background sleep in progress") instead of the loop's actual outcome, and
+> nothing resumes it afterward — no error, no later notification, no update to
+> the PR. Confirmed by checking back after real wall-clock CI time had passed:
+> zero polling activity, PR left unmerged with nothing watching it. Whatever
+> is happening internally, in this execution environment a forked skill's own
+> multi-turn continuation (yield on a background command, resume when it
+> exits) does not carry through the way it does for this skill running inline
+> in the top-level session, or for a real background subagent spawned via the
+> `Agent` tool — both of those are directly observed to work reliably in the
+> same environment. If you're tempted to try `context: fork` here again,
+> that's the gap to close first: get a `Agent`-tool-spawned background
+> subagent to survive a multi-minute wait and report back before trying it as
+> a skill fork again — don't just flip `background` and re-test, that's
+> already been done. Until then, keep this loop inline as below.
 
 ## The one trap
 
