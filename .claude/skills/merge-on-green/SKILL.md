@@ -11,7 +11,7 @@ description: >-
   consume the calling conversation's context. Invoke with args, in order:
   `<owner> <repo> <pull_number> <branch>`.
 context: fork
-agent: merge-on-green-watcher
+agent: general-purpose
 arguments: [owner, repo, pull_number, branch]
 ---
 
