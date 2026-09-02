@@ -251,4 +251,3 @@ path/branch filtering never reports, and the PR blocks forever — only require
 checks that run unconditionally on every PR.
 
 Until a repo is configured this way, keep the floor.
-fork test marker 2026-09-02T11:18:49Z
