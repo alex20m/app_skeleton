@@ -18,10 +18,12 @@ state of that thinking rather than rediscovering it.
 ## The shape
 
 ```
-CLAUDE.md               the standing rules — branch, test and merge policy
+AGENTS.md               the standing rules — branch, test and merge policy
+CLAUDE.md               `@AGENTS.md` — Claude Code reads this file, so it imports the real one
 INIT.md                 read once, when starting a new project from this
 SETUP.md                provisioning, written to be run without a browser
-.claude/skills/         the procedures agents are expected to follow
+.claude/skills/         the procedures agents are expected to follow (Claude Code)
+.agents/skills/         the same procedures, byte-identical, for other agent tools
 app/                    Next.js App Router
   api/health/           what is configured, as JSON
   api/me/               the template for an authenticated route
