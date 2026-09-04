@@ -71,6 +71,35 @@ Under YAML 1.1 the `on:` key parses as the boolean `true`; under YAML 1.2 it
 stays the string `"on"`. Modern parsers default to 1.2, but check which you have
 before concluding the trigger block is missing.
 
+## A jsdom test environment can break this test itself
+
+`tests/pipeline.test.ts` reads the workflow files with
+`fileURLToPath(new URL('../relative/path', import.meta.url))`. That is plain
+Node and works fine — until the project also has a frontend and sets `jsdom`
+as the Vitest environment for everything, at which point this exact test
+starts failing with something like `ENOENT: no such file or directory, open
+'.../tests/undefined'`. The path in the error doesn't even look related to
+the workflow file it was trying to read, so the instinct is to suspect the
+`read()` helper or the relative path string, and both are innocent.
+
+The cause is that jsdom installs its own `URL` implementation as the global
+`URL` for any test file running under that environment, shadowing Node's.
+It's spec-compliant enough that most code never notices, but resolving a
+relative `..` segment against a `file:` base and then round-tripping the
+result through Node's `fileURLToPath` is exactly the combination it doesn't
+reproduce correctly — `fileURLToPath` ends up with a path that never went up
+a directory, or throws about the URL's scheme, depending on the version.
+
+This only bites a test that (a) needs Node's `fileURLToPath`/`import.meta.url`
+pattern and (b) is running under a global `jsdom` environment set for
+unrelated component tests elsewhere in the suite. Fix it at the environment
+level, not by rewriting the path logic: default Vitest's `test.environment`
+to `'node'`, and opt individual files into `jsdom` with a per-file pragma
+(`// @vitest-environment jsdom` as the first line) on exactly the files that
+render components or touch the DOM. That keeps every Node-only test —
+`pipeline.test.ts` included — running under the environment its own
+`fileURLToPath` calls actually need.
+
 ## Deploying must degrade to a skip
 
 The deploy needs credentials that a fork's pull request cannot see and that a
