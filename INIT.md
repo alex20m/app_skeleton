@@ -105,26 +105,32 @@ npx neonctl neon-auth enable --project-id <id> --branch main
 npx neonctl neon-auth status --project-id <id> --output json   # read names back
 npx neonctl neon-auth domain add https://<your-app-url> --project-id <id>
 
-npx vercel env add NEON_AUTH_BASE_URL production preview development
-npx vercel env add NEON_AUTH_COOKIE_SECRET production preview development
+npx vercel env add NEON_AUTH_BASE_URL production,preview,development --value "<base url>" --yes
+npx vercel env add NEON_AUTH_COOKIE_SECRET production,preview,development --value "$(openssl rand -base64 32)" --yes
 ```
 
-`NEON_AUTH_COOKIE_SECRET` is yours to generate — `openssl rand -base64 32`, and
-**at least 32 characters** or the SDK throws. Then activate it once at startup:
+Environments are **comma-separated**; with spaces, the CLI (`vercel@62.2.0`)
+takes the second word as a git branch. `NEON_AUTH_COOKIE_SECRET` is yours to
+generate, and **at least 32 characters** or the SDK throws.
 
-```ts
-import { setAuthProvider } from '@/lib/auth';
-import { neonAuthProvider } from '@/lib/neonAuth';
+There is nothing to switch on in code: `defaultAuth` in `lib/auth.ts` uses Neon
+Auth as soon as both variables exist and loads the SDK only then. Do not move
+activation into a `setAuthProvider` call "at startup" — a Next app has no
+startup hook that every route's module graph is guaranteed to share, so a
+provider set in one entry point can be invisible to another, and the symptom is
+a configured deployment where everyone is signed out.
 
-setAuthProvider(neonAuthProvider);
-```
+If the app grants anything by email address — an invite, a share, a role — turn
+on email verification and check `session.emailVerified` before granting it;
+otherwise anyone can sign up with someone else's address and take it. See the
+`cli-first-provisioning` skill for the `neonctl` command.
 
 Check `/api/health` reports `authConfigured: true`, and remember that variables
 apply at build time — set them and redeploy.
 
-Two things to keep as they are. `unconfiguredAuth` stays the default because it
-fails closed, so a half-finished setup denies rather than exposes. And the
-session mapping stays in `lib/neonSession.ts`, apart from the SDK: importing
+Two things to keep as they are. The default fails closed — without its
+variables every request is anonymous — so a half-finished setup denies rather
+than exposes. And the session mapping stays in `lib/neonSession.ts`, apart from the SDK: importing
 `@neondatabase/auth` pulls in `next/headers`, which only resolves inside a Next
 runtime, so anything importing it cannot be unit-tested.
 

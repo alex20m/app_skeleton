@@ -2,7 +2,7 @@
   "name": "app-skeleton",
   "version": "0.1.0",
   "private": true,
-  "description": "Rename me. Starting point for a new app \u2014 see INIT.md.",
+  "description": "Rename me. Starting point for a new app — see INIT.md.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -17,7 +17,7 @@
   "dependencies": {
     "@neondatabase/auth": "0.5.0-beta",
     "@neondatabase/serverless": "^1.1.0",
-    "next": "^16.3.1",
+    "next": "^16.3.8",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
@@ -28,7 +28,7 @@
     "@types/react-dom": "^19.2.0",
     "dotenv": "^16.4.7",
     "eslint": "^9.39.5",
-    "eslint-config-next": "^16.3.1",
+    "eslint-config-next": "^16.3.8",
     "node-pg-migrate": "^9.0.0",
     "pg": "^8.23.0",
     "tsx": "^4.19.2",

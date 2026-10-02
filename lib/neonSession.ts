@@ -14,7 +14,7 @@ import type { Session } from '@/lib/auth';
 
 /** The shape `auth.getSession()` resolves to, narrowed to what is mapped. */
 export type NeonSessionData = {
-  user: { id: string; email: string } | null;
+  user: { id: string; email: string; emailVerified?: boolean } | null;
 } | null;
 
 export type NeonAuthConfig = {
@@ -51,6 +51,8 @@ export function sessionFromNeon(data: NeonSessionData | undefined): Session | nu
   if (!user) return null;
 
   // Identified by id, never by email: emails change, and a session keyed on one
-  // silently becomes a different account's when it does.
-  return { userId: user.id, email: user.email };
+  // silently becomes a different account's when it does. Verification is
+  // carried separately and only an explicit `true` counts, so a response
+  // missing the flag fails closed.
+  return { userId: user.id, email: user.email, emailVerified: user.emailVerified === true };
 }

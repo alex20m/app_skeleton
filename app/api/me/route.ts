@@ -16,5 +16,9 @@ export async function GET(request: Request): Promise<Response> {
     return Response.json({ error: 'Not signed in' }, { status: 401 });
   }
 
-  return Response.json({ userId: session.userId, email: session.email });
+  return Response.json({
+    userId: session.userId,
+    email: session.email,
+    emailVerified: session.emailVerified,
+  });
 }

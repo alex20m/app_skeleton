@@ -83,7 +83,7 @@ Set them for every environment you will use, including development, so local
 development pulls from the same source of truth.
 
 ```bash
-npx vercel env add APP_URL production preview development
+npx vercel env add APP_URL production,preview,development --value "https://<your-app>" --yes
 npx vercel env pull .env.local
 ```
 
