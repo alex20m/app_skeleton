@@ -36,6 +36,7 @@ lib/neonAuth.ts         the SDK wiring — thin, because it cannot be unit-teste
 db/migrate.ts           `npm run migrate` — node-pg-migrate, configured
 db/migrations/          numbered .sql files, applied once each
 tests/                  behaviour, plus the pipeline's own shape
+e2e/                    Playwright: the UI in a real browser, gated at 100 % coverage
 .github/workflows/      checks only: one per event, neither deploys nor migrates
 vercel.json             the build command that migrates before it builds
 ```
@@ -52,6 +53,9 @@ vercel.json             the build command that migrates before it builds
   dropped — the things nothing else would notice.
 - **Auth fails closed.** The default provider makes everyone anonymous, so an
   unfinished setup denies rather than exposes.
+- **The UI is held to 100 % end-to-end coverage.** Playwright drives the
+  production build; the run fails unless every module that runs in the browser
+  is fully covered, measured from the browser. See the `e2e-ui-coverage` skill.
 - **Configuration is reported, never echoed.** `/api/health` says whether things
   are set, never what they are.
 
@@ -67,4 +71,6 @@ The full check set, which is exactly what CI runs:
 
 ```bash
 npm run lint && npm run typecheck && npm test && npm run build
+npx playwright install chromium   # once
+npm run test:e2e                  # fails below 100 % UI coverage
 ```
