@@ -1,23 +1,36 @@
 /**
  * The authentication seam.
  *
- * Deliberately an interface with a not-configured default rather than a wired
- * provider. The house default is Neon Auth (managed Better Auth), but its SDK
- * is young and its package, variable and component names have changed before —
- * see the `cli-first-provisioning` skill. Guessing that surface here would ship
- * code that builds and fails at sign-in, which is the worst of both.
+ * Everything downstream (route handlers, tests) is written against
+ * `AuthProvider`, never against an SDK, so the provider can be swapped — or
+ * faked in a test — by touching one file.
  *
- * So the skeleton fixes the *shape* — what the rest of the app is allowed to
- * assume about a session — and INIT.md tells whoever sets the project up to
- * implement `AuthProvider` against whatever the provider's own README says
- * today. Everything downstream (route handlers, tests) is written against this
- * interface, so plugging the real one in touches exactly one file.
+ * The default provider is Neon Auth, activated by its own variables: until both
+ * `NEON_AUTH_BASE_URL` and `NEON_AUTH_COOKIE_SECRET` exist it resolves every
+ * request to anonymous, so a half-finished setup denies rather than exposes.
+ * It is activated here rather than by a `setAuthProvider` call "at startup"
+ * because a Next app has no startup hook that every route's module graph is
+ * guaranteed to share; a provider set from one entry point can be invisible to
+ * another, and that fails open-looking-closed — every request anonymous on a
+ * deployment that is configured.
+ *
+ * The SDK is imported lazily, and only once the variables exist, because it
+ * pulls in `next/headers`, which only resolves inside a Next runtime. Tests,
+ * which have no Neon variables, therefore never load it.
  */
+
+import { neonAuthConfig } from '@/lib/neonSession';
 
 export type Session = {
   /** Stable identifier for the account. Never an email — those change. */
   userId: string;
   email: string;
+  /**
+   * Whether the provider has proved this person controls `email`. Anything
+   * granted by email address — an invite, a share — must require it, because
+   * anyone can type anyone's address at sign-up.
+   */
+  emailVerified: boolean;
 };
 
 export interface AuthProvider {
@@ -31,22 +44,27 @@ export interface AuthProvider {
   getSession(request: Request): Promise<Session | null>;
 }
 
-/**
- * What an unconfigured project gets: everyone is anonymous. It fails closed —
- * routes deny rather than admit — so a half-finished setup cannot accidentally
- * expose data.
- */
+/** Everyone is anonymous. Fails closed — routes deny rather than admit. */
 export const unconfiguredAuth: AuthProvider = {
   getSession: async () => null,
 };
 
-let provider: AuthProvider = unconfiguredAuth;
+/** Neon Auth when its variables are set, anonymous otherwise. */
+export const defaultAuth: AuthProvider = {
+  async getSession(request) {
+    if (!neonAuthConfig()) return null;
+    const { neonAuthProvider } = await import('@/lib/neonAuth');
+    return neonAuthProvider.getSession(request);
+  },
+};
+
+let provider: AuthProvider = defaultAuth;
 
 export function authProvider(): AuthProvider {
   return provider;
 }
 
-/** Called once at startup by the real provider, and by tests. */
+/** For tests, and for swapping in a different provider. */
 export function setAuthProvider(next: AuthProvider): void {
   provider = next;
 }

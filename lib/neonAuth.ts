@@ -45,14 +45,9 @@ export function neonAuth(): NeonAuthInstance | undefined {
 }
 
 /**
- * Wire this up once at startup:
- *
- *   import { setAuthProvider } from '@/lib/auth';
- *   import { neonAuthProvider } from '@/lib/neonAuth';
- *   setAuthProvider(neonAuthProvider);
- *
- * Until the variables exist it resolves every request to anonymous — the same
- * fail-closed behaviour as the unconfigured default.
+ * Loaded lazily by `defaultAuth` in lib/auth.ts once both variables exist —
+ * nothing needs to register it. Should it be reached without them, it resolves
+ * every request to anonymous, the same fail-closed behaviour as the default.
  */
 export const neonAuthProvider: AuthProvider = {
   async getSession(): Promise<Session | null> {

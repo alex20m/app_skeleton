@@ -14,16 +14,38 @@ describe('mapping a Neon session', () => {
   });
 
   it('carries the account through', () => {
-    expect(sessionFromNeon({ user: { id: 'usr_abc', email: 'someone@example.test' } })).toEqual({
+    expect(
+      sessionFromNeon({ user: { id: 'usr_abc', email: 'someone@example.test', emailVerified: true } }),
+    ).toEqual({
       userId: 'usr_abc',
       email: 'someone@example.test',
+      emailVerified: true,
     });
+  });
+
+  it('reports an unverified email as unverified', () => {
+    // Anyone can type any address at sign-up. Whatever is matched by email —
+    // an invite, a share — must not be handed to an address nobody proved.
+    const session = sessionFromNeon({
+      user: { id: 'usr_abc', email: 'someone@example.test', emailVerified: false },
+    });
+
+    expect(session?.emailVerified).toBe(false);
+  });
+
+  it('treats a missing verification flag as unverified', () => {
+    // Fails closed: a provider response without the flag must not read as proof.
+    const session = sessionFromNeon({ user: { id: 'usr_abc', email: 'someone@example.test' } });
+
+    expect(session?.emailVerified).toBe(false);
   });
 
   it('identifies the account by id, not by email', () => {
     // Emails change; a session keyed on one silently becomes a different
     // account's when it does.
-    const session = sessionFromNeon({ user: { id: 'usr_abc', email: 'renamed@example.test' } });
+    const session = sessionFromNeon({
+      user: { id: 'usr_abc', email: 'renamed@example.test', emailVerified: true },
+    });
 
     expect(session?.userId).toBe('usr_abc');
   });
