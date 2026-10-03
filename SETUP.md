@@ -31,9 +31,11 @@ export VERCEL_TOKEN=...
 ```bash
 npm install
 npm run lint && npm run typecheck && npm test && npm run build
+npx playwright install --with-deps chromium
+npm run test:e2e
 ```
 
-All four pass before any service exists. If they do not, stop here.
+All of these pass before any service exists. If they do not, stop here.
 
 ## 2. The hosting project
 

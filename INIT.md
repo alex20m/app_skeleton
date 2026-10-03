@@ -14,6 +14,11 @@ dead weight: delete it in the same change that finishes step 6.
 
 - **Next.js + TypeScript**, building clean, with `lint`, `typecheck`, `test` and
   `build` all wired and passing.
+- **An end-to-end suite gated at 100 % UI coverage** — Playwright against the
+  production build, the API faked at the network boundary (`e2e/fakeApi.ts`),
+  and a teardown that fails the run unless every `'use client'` module is fully
+  covered. There is no client code yet, so it holds nothing until you add some;
+  from your first client component on, it holds all of it.
 - **CI as two workflows** — one per event, checks only. Nothing in Actions
   deploys or migrates, and `tests/pipeline.test.ts` fails if that changes.
 - **Deploys from the platform's Git integration.** No deploy job, no
@@ -177,6 +182,8 @@ often violated by a fresh project:
 - **Never commit to `main`.** One task, one branch, one PR.
 - **Tests are the review.** Nobody reads these PRs. Write the test first, watch
   it fail for the right reason, then make it pass.
+- **The UI stays at 100 % end-to-end coverage.** Replace `e2e/home.spec.ts`
+  with tests of your real screens as you build them, not afterwards.
 - **Every bug fix ships a regression test** that fails without the fix.
 - **Keep the pipeline tests.** They are what stop a later change from quietly
   removing the gate that makes all the other tests matter.
