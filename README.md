@@ -19,7 +19,6 @@ state of that thinking rather than rediscovering it.
 
 ```
 AGENTS.md               the standing rules — branch, test and merge policy
-CLAUDE.md               `@AGENTS.md` — Claude Code reads this file, so it imports the real one
 INIT.md                 read once, when starting a new project from this
 SETUP.md                provisioning, written to be run without a browser
 .claude/skills/         the procedures agents are expected to follow (Claude Code)
