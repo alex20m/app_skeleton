@@ -30,8 +30,7 @@ dead weight: delete it in the same change that finishes step 6.
   Neon Auth wired into it, inert until its variables exist — see step 4.
 - **A health endpoint** (`/api/health`) that reports what is configured, which
   is what every setup step below checks itself against.
-- **The workflow rules** (`AGENTS.md`, imported by `CLAUDE.md` so Claude Code
-  picks up the same content) and **the skills** (`.claude/skills/`, mirrored
+- **The workflow rules** (`AGENTS.md`, which Claude Code reads directly) and **the skills** (`.claude/skills/`, mirrored
   byte-identical in `.agents/skills/`) that this project's agents are expected
   to follow, regardless of which agent tool is doing the work.
 
