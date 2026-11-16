@@ -37,6 +37,19 @@ npm run test:e2e
 
 All of these pass before any service exists. If they do not, stop here.
 
+For a cloud agent environment (Claude Code on the web, for instance), set its
+setup script to install the same things, so each fresh session can run the
+suite. The script starts in the directory that holds the checkouts:
+
+```bash
+if [ -d <repo> ]; then (cd <repo> && npm ci && npx playwright install chromium); fi
+```
+
+Install the matching browser even if the sandbox ships one of its own. The
+sandbox's browser follows its image, not this lockfile, so don't point
+`playwright.config.ts` at it (`tests/pipeline.test.ts` fails if
+`executablePath` appears there).
+
 ## 2. The hosting project
 
 Everything else attaches to this, so it comes first. `vercel link` writes

@@ -154,11 +154,25 @@ test would catch.
 - **Next edits `tsconfig.json` on the first coverage build**, adding the
   separate build directory's generated types to `include`. Commit that change
   with the harness; otherwise every local run leaves the tree dirty.
-- **A sandbox's browser may not match the Playwright version.** Pass the
-  pre-installed binary through an environment variable into
-  `launchOptions.executablePath` rather than downloading; CI installs its own
-  with `npx playwright install --with-deps chromium`. Launch with
-  `--no-proxy-server` where an HTTP proxy is set, or it swallows `localhost`.
+- **Run the browser your Playwright version installs, everywhere.** Each
+  `@playwright/test` release expects one Chromium revision. Install it with
+  `npx playwright install chromium` (CI: `--with-deps`), and in a cloud or
+  container environment do that in its setup script, after the dependency
+  install. Don't set `launchOptions.executablePath` to a browser the machine
+  already has, even when a sandbox ships one: that browser follows the
+  machine's image, not your lockfile. A pinned path to it breaks every local
+  run with "Executable doesn't exist" once the image moves on. A path that
+  follows the image (a symlink or an environment variable) keeps running, but
+  against a different browser from CI's, so "green locally" stops meaning
+  "green on CI". Assert in the pipeline test that the config sets no
+  `executablePath`, so the override cannot quietly come back. Only if the
+  environment truly cannot reach the browser download host is an override
+  justified; then make it opt-in through an environment variable, never the
+  default. Unsure: this assumes the download host is reachable, which it was
+  from a cloud sandbox with unrestricted network at Playwright 1.62. Check
+  with a throwaway `PLAYWRIGHT_BROWSERS_PATH` before you rely on it.
+- **Launch with `--no-proxy-server` where an HTTP proxy is set**, or it
+  swallows `localhost`.
 - **Coverage vanishes across a full navigation on newer Chromium.** With
   Chromium's RenderDocument on, each cross-document navigation (`page.reload`,
   `window.location.assign`, a plain link) gets a new frame host and DevTools
@@ -192,3 +206,23 @@ test would catch.
   run locally. If disabling the feature stops working on some later build,
   the feature may have been removed and made unconditional, and coverage
   will need reading before each navigation some other way.
+
+## One gate per viewport
+
+Run the suite as one Playwright project per layout (phone, desktop) and hold
+**each** project to 100 % on its own, with a separate coverage report per
+project. A single merged report lets the phone run fill the desktop's gaps (and
+the reverse), so it says nothing about whether each layout was exercised.
+
+Consequences worth knowing before you start:
+
+- Code behind a layout-only control (a ☰ that is hidden above a breakpoint)
+  cannot be reached from the other project at its default viewport. Give the
+  tests of that control an explicit `test.use({ viewport })` at the layout where
+  it exists, and add one test per layout asserting the other layout's
+  difference (sidebar visible, no ☰) rather than skipping anything.
+- Shared helpers must work in both layouts, and must **wait** for the layout to
+  render before choosing: `isVisible()` does not wait, so "click ☰ if visible"
+  silently skips the click on a slow render. Wait for `toggle.or(sidebar).first()`.
+- Verified against Playwright 1.x with `devices['Pixel 7']` and `devices['Desktop Chrome']`;
+  not verified for WebKit/Firefox projects.
