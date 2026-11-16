@@ -124,6 +124,15 @@ describe('the checks', () => {
     expect(pkg.scripts['test:e2e']).toMatch(/E2E_COVERAGE=1 next build && playwright test$/);
   });
 
+  it('launches the browser its own Playwright version installs, the same one CI runs', () => {
+    // A machine's pre-installed browser follows the machine's image, not the
+    // lockfile: pointing executablePath at one tests locally against a
+    // different browser from CI's, and a pinned path breaks every local run
+    // once the image moves on. Environments install the matching browser
+    // instead (`npx playwright install chromium`).
+    expect(read('playwright.config.ts')).not.toMatch(/executablePath/);
+  });
+
   it('report every failing check in one run instead of stopping at the first', () => {
     for (const [file, workflow] of Object.entries(workflows)) {
       const checks = (workflow.jobs.verify?.steps ?? []).filter((step) =>

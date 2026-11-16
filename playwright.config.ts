@@ -25,9 +25,11 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: 'retain-on-failure',
+    // The browser is the one this @playwright/test version installs
+    // (`npx playwright install chromium`), locally and on CI alike. Don't point
+    // it at a browser the machine happens to have: its revision
+    // follows the machine's image, not the lockfile.
     launchOptions: {
-      // A sandbox may pre-install Chromium at a fixed path; CI installs Playwright's own.
-      executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined,
       // An HTTP(S)_PROXY in the environment would otherwise swallow localhost.
       args: ['--no-proxy-server'],
     },
